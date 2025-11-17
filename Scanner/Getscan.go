@@ -6,36 +6,49 @@ import (
 	"sync"
 	"time"
 	"vidar-scan/basework"
+
+	"github.com/panjf2000/ants/v2"
 )
 
 func Getscan(url string, filename string) {
 	finalpath := basework.UrlConstruct(url, filename)
 
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 5 * time.Second,
 	}
 
 	var wg sync.WaitGroup
 
-	ratelimit := 2
+	concurrencylimit := 2000
 
-	limitch := make(chan struct{}, ratelimit)
+	sleeptime := 500 * time.Millisecond
+
+	workerfunc := func(data interface{}) {
+		defer wg.Done()
+
+		url := data.(string)
+
+		basework.SendMessage(client, url)
+		time.Sleep(sleeptime)
+	}
+
+	pool, err := ants.NewPoolWithFunc(concurrencylimit, workerfunc)
+	if err != nil {
+		fmt.Println("error: %v", err)
+	}
+
+	defer pool.Release()
 
 	fmt.Println("-----START-----")
-
 	for _, url = range finalpath {
-		limitch <- struct{}{}
 
 		wg.Add(1)
 
-		go func(url string) {
-			defer wg.Done()
-
-			defer func() { <-limitch }()
-
-			basework.SendMessage(client, url)
-
-		}(url)
+		err := pool.Invoke(url)
+		if err != nil {
+			fmt.Println("error: %v", err)
+			wg.Done()
+		}
 	}
 
 	wg.Wait()
