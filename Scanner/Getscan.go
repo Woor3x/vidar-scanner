@@ -14,20 +14,23 @@ func Getscan(url string, filename string) {
 	finalpath := basework.UrlConstruct(url, filename)
 
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 10 * time.Second,
 	}
 
 	var wg sync.WaitGroup
 
-	concurrencylimit := 200
+	concurrencylimit := 4000
 
-	sleeptime := 5000 * time.Millisecond
+	//var rps float64 = 100
+	//limiter := rate.NewLimiter(rate.Limit(rps), 1)
+	sleeptime := 500 * time.Millisecond
 
 	workerfunc := func(data interface{}) {
 		defer wg.Done()
 
 		url := data.(string)
 
+		//limiter.Wait(context.Background())
 		basework.SendMessage(client, url)
 		time.Sleep(sleeptime)
 	}

@@ -17,12 +17,12 @@ func SendMessage(client *http.Client, finalpath string) {
 	rep, err := client.Do(req)
 
 	if err != nil {
-		fmt.Printf("[error]:%v\n", err)
+		//fmt.Printf("[error]:%v\n", err)
 		return
 	}
 
 	io.Copy(io.Discard, rep.Body)
-	rep.Body.Close()
+	defer rep.Body.Close()
 
 	if rep.StatusCode != 404 {
 		fmt.Printf("[found] %-6d %s\n", rep.StatusCode, finalpath)
