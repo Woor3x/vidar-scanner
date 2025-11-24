@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-	"vidar-scan/Scanner"
+	scanner "vidar-scan/Scanner"
 	"vidar-scan/basework"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -40,7 +41,7 @@ var hostCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(hostCmd)
 
-	hostCmd.Flags().StringVarP(&IpHost, "ip", "i", "10.150.151.26/16", "Target IPv4 (required)")
+	hostCmd.Flags().StringVarP(&IpHost, "ip", "i", "", "Target IPv4 (required)")
 
-	//hostCmd.MarkFlagRequired("ip")
+	hostCmd.MarkFlagRequired("ip")
 }
