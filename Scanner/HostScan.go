@@ -34,12 +34,14 @@ func HostScan(StartIP string, EndIP string) {
 	fmt.Println("-----START-----")
 
 	concurrencylimit := 2000
+
 	scanfunc := func(data interface{}) {
 		defer wg.Done()
 
 		ip := Uint32ToIP(data.(uint32)).String()
+		task := func() bool { return basework.IsAliveTCP(ip, 1000*time.Millisecond) }
 
-		result := basework.IsAliveTCP(ip, 1000*time.Millisecond)
+		result := basework.RetryWithBool(3, 2*time.Second, task)
 
 		if result {
 			fmt.Printf("[Alive] %s\n", ip)
@@ -47,6 +49,7 @@ func HostScan(StartIP string, EndIP string) {
 	}
 
 	pool, err := ants.NewPoolWithFunc(concurrencylimit, scanfunc)
+
 	if err != nil {
 		fmt.Println("error: %v", err)
 	}
@@ -58,6 +61,7 @@ func HostScan(StartIP string, EndIP string) {
 		wg.Add(1)
 
 		err := pool.Invoke(ip)
+
 		if err != nil {
 			fmt.Println("error: %v", err)
 			wg.Done()

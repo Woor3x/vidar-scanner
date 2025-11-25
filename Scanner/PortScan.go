@@ -15,29 +15,44 @@ func PortScan(targetIp string, begin_port int, end_port int) []int {
 
 	concurrencylimit := 3000
 	rateLimit := 3 * time.Millisecond
+	var ports []int
 
-	pool, err := ants.NewPool(concurrencylimit)
+	workerfunc := func(data interface{}) {
+		defer wg.Done()
+
+		p := data.(int)
+
+		time.Sleep(rateLimit)
+
+		task := func() bool { return basework.TcpConnect(targetIp, p, 3*time.Second) }
+
+		result := basework.RetryWithBool(3, 500*time.Millisecond, task)
+
+		if result {
+			mu.Lock()
+			ports = append(ports, p)
+			mu.Unlock()
+
+			fmt.Printf("[OPEN] %d\n", p)
+		}
+	}
+
+	pool, err := ants.NewPoolWithFunc(concurrencylimit, workerfunc)
+
 	if err != nil {
 		fmt.Println("error: %v", err)
 	}
 
 	fmt.Println("-----START-----")
-	var ports []int
+
 	for port := begin_port; port <= end_port; port++ {
 		wg.Add(1)
-		p := port
 
-		pool.Submit(func() {
-			time.Sleep(rateLimit)
-			defer wg.Done()
-			if basework.TcpConnect(targetIp, p, 3*time.Second) {
-				mu.Lock()
-				ports = append(ports, p)
-				mu.Unlock()
-
-				fmt.Printf("[OPEN] %d\n", p)
-			}
-		})
+		err := pool.Invoke(port)
+		if err != nil {
+			fmt.Println("error: %v", err)
+			wg.Done()
+		}
 
 		//if port%1000 == 0 {
 		//	fmt.Printf("%d\n", port)
@@ -45,7 +60,7 @@ func PortScan(targetIp string, begin_port int, end_port int) []int {
 	}
 
 	wg.Wait()
-	pool.Release()
+	defer pool.Release()
 	fmt.Println("-----OVER-----")
 
 	return ports

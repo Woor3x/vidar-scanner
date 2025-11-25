@@ -38,7 +38,11 @@ func Getscan(url string, filename string) {
 
 		start := time.Now()
 
-		err := basework.SendMessage(client, url)
+		task := func() error {
+			return basework.SendMessage(client, url)
+		}
+
+		err := basework.RetryWithError(3, 1*time.Second, task)
 		latency := time.Since(start)
 		basework.RecordResult(err, latency)
 		//time.Sleep(sleeptime)
