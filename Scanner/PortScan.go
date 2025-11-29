@@ -9,11 +9,11 @@ import (
 	"github.com/panjf2000/ants/v2"
 )
 
-func PortScan(targetIp string, BeginPort int, EndPort int) []int {
+func PortScan(targetIp string, begin_port int, end_port int) []int {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
-	concurrencylimit := 1000
+	concurrencylimit := 3000
 	rateLimit := 3 * time.Millisecond
 	var ports []int
 
@@ -45,7 +45,7 @@ func PortScan(targetIp string, BeginPort int, EndPort int) []int {
 
 	fmt.Println("-----START-----")
 
-	for port := BeginPort; port <= EndPort; port++ {
+	for port := begin_port; port <= end_port; port++ {
 		wg.Add(1)
 
 		err := pool.Invoke(port)
