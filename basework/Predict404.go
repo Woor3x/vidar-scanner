@@ -1,8 +1,6 @@
 package basework
 
 import (
-	//"fmt"
-
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -27,12 +25,15 @@ func Predict404(text string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	//fmt.Println(preds)
+
 	if preds == nil || len(preds) == 0 {
 		return "", errors.New("no prediction")
 	}
-	//fmt.Println(preds)
 
 	pred1, pred2 := preds[0], preds[1]
+
 	if pred1.Probability > pred2.Probability {
 		return pred1.Label, nil
 	} else {

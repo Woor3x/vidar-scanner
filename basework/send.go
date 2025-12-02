@@ -35,11 +35,10 @@ func SendMessage(client *http.Client, finalpath string, cookie string) error {
 
 	code := rep.StatusCode
 
-	fmt.Println(code)
+	//fmt.Println(code)
 	switch {
 
 	case code >= 200 && code < 300:
-		fmt.Println("请求成功")
 
 	case code >= 300 && code < 400:
 		return nil

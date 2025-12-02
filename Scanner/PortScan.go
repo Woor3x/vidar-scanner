@@ -14,6 +14,15 @@ func PortScan(targetIp string, BeginPort int, EndPort int) []int {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
+	const srcPort = 56789
+
+	scanner, err := basework.NewSynScanner(targetIp, srcPort)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	defer scanner.Close()
+
 	concurrencylimit := 1000
 	//rateLimit := 3 * time.Millisecond
 	var ports []int
@@ -27,19 +36,23 @@ func PortScan(targetIp string, BeginPort int, EndPort int) []int {
 		//time.Sleep(rateLimit)
 
 		start := time.Now()
-		task := func() bool { return basework.TcpConnect(targetIp, p, 3*time.Second) }
+		//task := func() bool { return basework.TcpConnect(targetIp, p, 3*time.Second) }
+		state := scanner.ScanPort(uint16(p), 500*time.Millisecond)
 		latency := time.Since(start)
 		var err error
 
-		if latency >= 1000*time.Millisecond {
-			err = fmt.Errorf("latency too large")
+		switch state {
+		case "open", "closed":
+			err = nil
+		default:
+			err = fmt.Errorf("unexpected state: %s", state)
 		}
 
 		basework.RecordResult(err, latency)
 
-		result := basework.RetryWithBool(3, 500*time.Millisecond, task)
+		//result := basework.RetryWithBool(3, 500*time.Millisecond, task)
 
-		if result {
+		if state == "open" {
 			mu.Lock()
 			ports = append(ports, p)
 			mu.Unlock()

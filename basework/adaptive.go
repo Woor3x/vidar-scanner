@@ -12,7 +12,7 @@ var (
 	Limiter  *rate.Limiter
 	MinRps   = 20.0
 	CurRps   = 50.0
-	MaxRps   = 1000.0
+	MaxRps   = 2000.0
 	Stats    ControlStat
 	StatLock sync.Mutex
 )
@@ -61,9 +61,15 @@ func ControlLimiter() {
 			s.Total, s.Err, ErrRate, AvgLatency, CurRps)
 
 		if ErrRate < 0.1 && AvgLatency < 1500*time.Millisecond {
-			NewRps *= 1.1
-		} else if ErrRate > 0.4 && AvgLatency > 3*time.Second {
+			if CurRps*1.1 < CurRps+10 {
+				NewRps = CurRps + 10
+			} else {
+				NewRps *= 1.1
+			}
+		} else if ErrRate > 0.2 && AvgLatency > 3*time.Second {
 			NewRps *= 0.8
+		} else if ErrRate > 0.3 && AvgLatency > 3*time.Second {
+			NewRps *= 0.6
 		}
 
 		if NewRps < MinRps {
